@@ -1,0 +1,26 @@
+# Reference artifact — the macOS Zen build we reverse-engineered. 539MB, not ours to ship.
+Zen.app/
+
+# Android / Gradle
+.gradle/
+build/
+local.properties
+*.apk
+*.aab
+*.keystore
+*.jks
+captures/
+.cxx/
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# Personal listening material — never tracked
+docs/HOW_IT_WORKS.md
+docs/HOW_IT_WORKS.pdf
+docs/FILE_REFERENCE.md
+docs/FILE_REFERENCE.pdf
+
+.remember/

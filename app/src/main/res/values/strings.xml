@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">K&#333;an</string>
+    <string name="url_bar_hint">Search or enter address</string>
+    <string name="tabs">Tabs</string>
+    <string name="new_tab">New tab</string>
+    <string name="close_tab">Close tab</string>
+    <string name="back">Back</string>
+    <string name="forward">Forward</string>
+    <string name="reload">Reload</string>
+    <string name="stop">Stop</string>
+</resources>

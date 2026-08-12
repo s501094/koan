@@ -1,0 +1,52 @@
+# Kōan — running log
+
+Android browser on GeckoView, reimplementing Zen Browser's UX concepts natively.
+Reference artifact for the reverse-engineering: `Zen.app/` (gitignored, 539MB).
+
+## Requests
+
+**2026-08-12** — Reverse engineer Zen.app, learn everything, build an Android version.
+Follow-up: get it working first, then the theme, then extras.
+
+## What Zen.app turned out to be
+
+- Zen Browser 1.21.13b on Gecko 153.0.3, MPL-2.0, source at github.com/zen-browser/desktop @ 6c5a150.
+- Zero custom native code. All Mozilla binaries.
+- Entire product = ~37k lines of privileged chrome JS/CSS in `browser/omni.ja` + 137 `zen.*` prefs.
+- Biggest pieces: ZenSpaceManager 3288, ZenViewSplitter 2576, ZenGradientGenerator 2019,
+  ZenFolders+ZenFolder 2332, ZenGlanceManager 1961, ZenDragAndDrop 1831, boosts/* 3842.
+- 151 custom SVG icons, `grain-bg.png` noise texture.
+- None of it runs on Android — GeckoView has no chrome layer. Port is a rewrite of the
+  concepts, not the code. Portable assets: gradient algorithm, Space data model, icon set.
+
+## Decisions
+
+- Engine: Android Components 153.0.4 (not raw GeckoView) — same Gecko revision as the desktop
+  build, and it brings BrowserStore/tabs/downloads/extensions so we only write the Zen layer.
+- Name: Kōan. `com.tyell.koan`. Icon: hand-authored ensō with the three theme dots inside.
+- Per-Space cookie isolation will use `GeckoSessionSettings.contextId`.
+- Split view deferred — not useful on a phone.
+- Search is hand-rolled (`UrlInput`) instead of mozac's search subsystem. DuckDuckGo default.
+
+## Stages
+
+**1. Working browser — done.**
+Gradle scaffold, `:core:engine` `:core:theme` `:core:design` `:app`. GeckoView renders,
+URL bar with search/URL detection, bottom toolbar, tab switcher sheet, session restore,
+intent handling, signed release APK, launcher icon.
+Build traps hit and fixed: Glean native capability conflict (geckoview-omni vs
+appservices' glean) — dropped unused feature-search and added a capabilitiesResolution
+rule; Compose BOM 2026.08.00 needs AGP 9.1/compileSdk 37, pinned back to 2026.06.01.
+Not run on hardware — no device attached and the local AVD system image is a stub.
+
+**2. Theme.** Port `ZenGradientGenerator` to Compose — colour-dot model, the 1/2/3-dot gradient
+composition rules, `shouldBeDarkMode` luminance test, grain overlay. 12 built-in presets plus
+the touch colour-wheel picker.
+
+**3. Spaces + Essentials.** `:core:data` (Room), Space switcher, per-Space contextId, pinned grid.
+
+**4. Glance.** Long-press link → floating card, swipe to dismiss, drag up to promote.
+
+**5. Boosts.** Bundled WebExtension content script, touch element picker, Zap, per-site CSS/JS.
+
+**6. Folders + Live Folders.** Nested folders, RSS and GitHub feed backing, WorkManager refresh.
