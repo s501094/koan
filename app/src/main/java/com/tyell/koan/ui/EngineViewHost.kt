@@ -12,24 +12,30 @@ import mozilla.components.feature.session.SessionFeature
 /**
  * Hosts Gecko's rendering surface inside Compose.
  *
- * [SessionFeature] is what keeps the view pointed at whichever tab is
- * selected in the store — we never call `render()` ourselves. Select a
- * different tab and the feature swaps the underlying EngineSession.
+ * [SessionFeature] is what keeps the view pointed at the right tab — we never
+ * call `render()` ourselves. With [tabId] null it follows the store's selection;
+ * with a [tabId] it stays pinned to that one tab, which is how Glance shows a
+ * second page over the top of the one you're already on.
  */
 @Composable
 fun EngineViewHost(
     components: KoanComponents,
     modifier: Modifier = Modifier,
+    tabId: String? = null,
 ) {
     val context = LocalContext.current
-    val engineView = remember { components.engine.createView(context) }
 
-    val sessionFeature = remember {
+    // Keyed on tabId: a Glance overlay gets its own engine view, and closing it
+    // must tear that view down rather than recycle it onto another tab.
+    val engineView = remember(tabId) { components.engine.createView(context) }
+
+    val sessionFeature = remember(tabId, engineView) {
         SessionFeature(
             components.store,
             components.sessionUseCases.goBack,
             components.sessionUseCases.goForward,
             engineView,
+            tabId,
         )
     }
 

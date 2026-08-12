@@ -64,7 +64,18 @@ delete dialog, and `zen.workspaces.swipe-actions` as a horizontal drag on the to
 Theme moved from global DataStore onto the Space row — each Space has its own gradient.
 38 tests total (8 SpaceQueries, 11 Robolectric repository, 13 gradient, 6 UrlInput).
 
-**4. Glance.** Long-press link → floating card, swipe to dismiss, drag up to promote.
+**4. Glance — done.**
+Long-press a link → it opens as a real (unselected) tab in the current Space and is rendered in
+a floating card over the page you're on. The main view never changes tab, which is the point.
+Drag down / tap scrim / back → close the tab (Zen's `closeGlance`). Drag up or tap expand →
+select it (Zen's `fullyOpenGlance`). 350ms, matching `zen.glance.animation-duration`.
+Plumbing: `ContentState.hitResult` is populated by `browser.state.engine.EngineObserver`, which
+`EngineMiddleware` already installs — no `feature-contextmenu` needed. `Glance.linkFrom` maps
+`HitResult.UNKNOWN.src` / `IMAGE_SRC.uri` to a link and refuses non-http schemes; the effect
+consumes the hit result so one press can't fire twice.
+`EngineViewHost` gained a `tabId`, so `SessionFeature` pins the overlay's view to one tab while
+the main view keeps following the selection. The Glance tab is filtered out of the tab list.
+47 tests (9 new).
 
 **5. Boosts.** Bundled WebExtension content script, touch element picker, Zap, per-site CSS/JS.
 

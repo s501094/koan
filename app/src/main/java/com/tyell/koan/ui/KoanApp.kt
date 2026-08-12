@@ -29,6 +29,8 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.LaunchedEffect
+import com.tyell.koan.Glance
 import com.tyell.koan.MainActivity
 import com.tyell.koan.SpaceController
 import com.tyell.koan.data.SpaceEntity
@@ -44,6 +46,7 @@ import com.tyell.koan.theme.ThemePresets
 import com.tyell.koan.theme.zenGradientBackground
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.lib.state.ext.flow
 
 @Composable
@@ -84,7 +87,7 @@ private fun BrowserShell(
         activeSpace?.let { repository.essentials(it.id) } ?: flowOf(emptyList())
     }.collectAsStateWithLifecycle(initialValue = emptyList())
 
-    val spaceTabs = controller.tabsIn(browserState, activeSpace)
+    val allSpaceTabs = controller.tabsIn(browserState, activeSpace)
     val tab = controller.selectedTabIn(browserState, activeSpace)
     val content = tab?.content
 
@@ -93,6 +96,34 @@ private fun BrowserShell(
     var showTheme by remember { mutableStateOf(false) }
     var editingSpace by remember { mutableStateOf<SpaceEntity?>(null) }
     var creatingSpace by remember { mutableStateOf(false) }
+    var glanceTabId by remember { mutableStateOf<String?>(null) }
+
+    // A long press on a link lands in the tab's own state as a hit result.
+    // Turn it into a Glance and consume it, so the same press can't fire twice.
+    val hitResult = content?.hitResult
+    LaunchedEffect(tab?.id, hitResult) {
+        val ownerId = tab?.id ?: return@LaunchedEffect
+        val link = Glance.linkFrom(hitResult) ?: return@LaunchedEffect
+        components.store.dispatch(ContentAction.ConsumeHitResultAction(ownerId))
+        if (glanceTabId == null) {
+            glanceTabId = controller.openTab(link, activeSpace, selectTab = false)
+        }
+    }
+
+    // The Glance tab is a real tab in the Space, just currently being shown in
+    // the overlay rather than the main view. Hide it from the list so it can't
+    // be selected out from under the peek.
+    val spaceTabs = allSpaceTabs.filterNot { it.id == glanceTabId }
+
+    fun dismissGlance() {
+        glanceTabId?.let { components.tabsUseCases.removeTab(it) }
+        glanceTabId = null
+    }
+
+    fun promoteGlance() {
+        glanceTabId?.let { components.tabsUseCases.selectTab(it) }
+        glanceTabId = null
+    }
 
     fun stepSpace(delta: Int) {
         val next = controller.step(spaces, activeSpace, delta) ?: return
@@ -159,6 +190,18 @@ private fun BrowserShell(
                 onSwipeSpace = ::stepSpace,
             )
         }
+    }
+
+    val glanceTab = glanceTabId?.let { id -> browserState.tabs.firstOrNull { it.id == id } }
+    if (glanceTabId != null && glanceTab != null) {
+        GlanceOverlay(
+            components = components,
+            tabId = glanceTab.id,
+            title = glanceTab.content.title,
+            url = glanceTab.content.url,
+            onDismiss = ::dismissGlance,
+            onPromote = ::promoteGlance,
+        )
     }
 
     if (showTabs) {

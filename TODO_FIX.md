@@ -2,6 +2,14 @@
 
 ## TODO
 
+- A Glance left open when the app is killed comes back as an ordinary tab — `glanceTabId` is UI
+  state and isn't persisted. Harmless, but it's a behaviour difference from desktop.
+- No nested Glance: long-pressing inside the overlay does nothing, since only the selected tab's
+  hitResult is observed. Same as desktop, but by accident rather than design.
+- `zen.glance.open-essential-external-links` not implemented — external links from an Essential
+  should open in a Glance rather than navigating the Essential away.
+- Two live EngineViews while a Glance is open. Fine for one overlay; worth watching for memory.
+
 - Popups / `target=_blank` aren't handled — `WindowFeature` from `feature-session` isn't wired,
   so a page opening a new window currently does nothing. It also needs to inherit the Space's
   contextId when it is wired.
@@ -18,7 +26,6 @@
 - The wheel is sampled at 56x56 and redrawn each frame during a drag. Fine on a phone, but if it
   ever stutters, cache it to an ImageBitmap keyed on lightness+type.
 
-- Stage 4: Glance modal.
 - Stage 5: Boosts (bundled WebExtension, touch element picker, Zap).
 - Stage 6: Folders + Live Folders (RSS, GitHub).
 - Port the 151 Zen SVG icons to vector drawables (MPL-2.0, needs attribution file).
