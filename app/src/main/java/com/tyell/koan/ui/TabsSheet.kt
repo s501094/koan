@@ -35,6 +35,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.tyell.koan.data.EssentialEntity
+import com.tyell.koan.data.SpaceEntity
 import com.tyell.koan.engine.UrlInput
 import mozilla.components.browser.state.state.TabSessionState
 
@@ -48,6 +50,16 @@ fun TabsSheet(
     onNewTab: () -> Unit,
     onThemeClick: () -> Unit,
     onDismiss: () -> Unit,
+    spaces: List<SpaceEntity>,
+    activeSpace: SpaceEntity?,
+    essentials: List<EssentialEntity>,
+    canPinCurrent: Boolean,
+    onSelectSpace: (SpaceEntity) -> Unit,
+    onCreateSpace: () -> Unit,
+    onEditSpace: (SpaceEntity) -> Unit,
+    onOpenEssential: (EssentialEntity) -> Unit,
+    onRemoveEssential: (EssentialEntity) -> Unit,
+    onPinCurrent: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -56,7 +68,27 @@ fun TabsSheet(
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
-        Column(Modifier.navigationBarsPadding()) {
+        Column(
+            Modifier.navigationBarsPadding(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            SpacesBar(
+                spaces = spaces,
+                activeId = activeSpace?.id,
+                onSelect = onSelectSpace,
+                onCreate = onCreateSpace,
+                onLongPress = onEditSpace,
+            )
+
+            EssentialsGrid(
+                essentials = essentials,
+                tabs = tabs,
+                canAddCurrent = canPinCurrent && essentials.size < EssentialEntity.MAX_PER_SPACE,
+                onOpen = onOpenEssential,
+                onRemove = onRemoveEssential,
+                onAddCurrent = onPinCurrent,
+            )
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

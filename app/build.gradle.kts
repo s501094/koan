@@ -99,6 +99,7 @@ kotlin {
 
 dependencies {
     implementation(project(":core:engine"))
+    implementation(project(":core:data"))
     implementation(project(":core:theme"))
     implementation(project(":core:design"))
 

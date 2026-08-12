@@ -2,16 +2,22 @@
 
 ## TODO
 
+- Popups / `target=_blank` aren't handled — `WindowFeature` from `feature-session` isn't wired,
+  so a page opening a new window currently does nothing. It also needs to inherit the Space's
+  contextId when it is wired.
+- Essentials favicons only appear when a tab in the Space happens to be on that URL. Needs
+  `BrowserIcons` proper (it's already constructed in `KoanComponents`, just unused).
+- Spaces can't be reordered; `position` is write-only in practice.
+- Space chips don't scroll to the active one when it changes off-screen.
+- `:core:data` schema export is on but there are no migrations yet — v1 only.
+
 - Theme picker: dots other than the primary aren't individually draggable yet — moving the
   primary re-derives the rest from the harmony. Desktop lets you drag each one free ("floating").
-- Theme is global, not per-Space. Moves into the Space row when `:core:data` lands.
 - Custom (literal hex) dots are modelled in `ColorDot.customRgb` and handled by the gradient
   composer, but there's no UI to enter one.
 - The wheel is sampled at 56x56 and redrawn each frame during a drag. Fine on a phone, but if it
   ever stutters, cache it to an ImageBitmap keyed on lightness+type.
 
-- Stage 3: `:core:data` Room module — spaces, tabs, folders, boosts, theme presets.
-- Stage 3: Space switcher + per-Space `contextId` isolation + Essentials grid.
 - Stage 4: Glance modal.
 - Stage 5: Boosts (bundled WebExtension, touch element picker, Zap).
 - Stage 6: Folders + Live Folders (RSS, GitHub).

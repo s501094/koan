@@ -30,7 +30,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tyell.koan.MainActivity
-import com.tyell.koan.ThemeStore
+import com.tyell.koan.SpaceController
+import com.tyell.koan.data.SpaceEntity
+import com.tyell.koan.data.SpaceRepository
 import com.tyell.koan.design.KoanDimens
 import com.tyell.koan.design.KoanShapes
 import com.tyell.koan.engine.KoanComponents
@@ -40,26 +42,35 @@ import com.tyell.koan.theme.LocalKoanTheme
 import com.tyell.koan.theme.ThemePickerSheet
 import com.tyell.koan.theme.ThemePresets
 import com.tyell.koan.theme.zenGradientBackground
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
-import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.lib.state.ext.flow
 
 @Composable
-fun KoanApp(components: KoanComponents, themeStore: ThemeStore) {
-    val spec by themeStore.spec.collectAsStateWithLifecycle(
-        initialValue = ThemePresets.default.toSpec(),
-    )
+fun KoanApp(
+    components: KoanComponents,
+    repository: SpaceRepository,
+    controller: SpaceController,
+) {
+    val activeSpace by repository.activeSpace.collectAsStateWithLifecycle(initialValue = null)
+    val spec = remember(activeSpace) {
+        activeSpace?.toThemeSpec() ?: ThemePresets.default.toSpec()
+    }
 
     KoanTheme(spec = spec) {
-        BrowserShell(components, themeStore)
+        BrowserShell(components, repository, controller, activeSpace)
     }
 }
 
 @Composable
-private fun BrowserShell(components: KoanComponents, themeStore: ThemeStore) {
+private fun BrowserShell(
+    components: KoanComponents,
+    repository: SpaceRepository,
+    controller: SpaceController,
+    activeSpace: SpaceEntity?,
+) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
-    val theme = LocalKoanTheme.current
 
     val stateFlow = remember(components, lifecycleOwner) {
         components.store.flow(lifecycleOwner)
@@ -68,12 +79,25 @@ private fun BrowserShell(components: KoanComponents, themeStore: ThemeStore) {
         initialValue = components.store.state,
     )
 
-    val tab = browserState.selectedTab
+    val spaces by repository.spaces.collectAsStateWithLifecycle(initialValue = emptyList())
+    val essentials by remember(activeSpace) {
+        activeSpace?.let { repository.essentials(it.id) } ?: flowOf(emptyList())
+    }.collectAsStateWithLifecycle(initialValue = emptyList())
+
+    val spaceTabs = controller.tabsIn(browserState, activeSpace)
+    val tab = controller.selectedTabIn(browserState, activeSpace)
     val content = tab?.content
 
     var editing by remember { mutableStateOf(false) }
     var showTabs by remember { mutableStateOf(false) }
     var showTheme by remember { mutableStateOf(false) }
+    var editingSpace by remember { mutableStateOf<SpaceEntity?>(null) }
+    var creatingSpace by remember { mutableStateOf(false) }
+
+    fun stepSpace(delta: Int) {
+        val next = controller.step(spaces, activeSpace, delta) ?: return
+        scope.launch { controller.switchTo(next, components.store.state) }
+    }
 
     BackHandler(enabled = editing || showTabs || content?.canGoBack == true) {
         when {
@@ -82,6 +106,10 @@ private fun BrowserShell(components: KoanComponents, themeStore: ThemeStore) {
             else -> components.sessionUseCases.goBack()
         }
     }
+
+    // KoanTheme already resolved the Space's spec and its dark/light decision;
+    // read them back rather than recomputing and risking a mismatch.
+    val theme = LocalKoanTheme.current
 
     Column(
         modifier = Modifier
@@ -121,20 +149,22 @@ private fun BrowserShell(components: KoanComponents, themeStore: ThemeStore) {
                 url = content?.url.orEmpty().takeIf { it != "about:blank" }.orEmpty(),
                 isLoading = content?.loading == true,
                 isSecure = content?.securityInfo?.isSecure == true,
-                tabCount = browserState.tabs.size,
+                tabCount = spaceTabs.size,
                 editing = editing,
                 onEditingChange = { editing = it },
                 onNavigate = { components.sessionUseCases.loadUrl(UrlInput.toUrl(it)) },
                 onReload = { components.sessionUseCases.reload() },
                 onStop = { components.sessionUseCases.stopLoading() },
                 onTabsClick = { showTabs = true },
+                onSwipeSpace = ::stepSpace,
             )
         }
     }
 
     if (showTabs) {
+        val currentUrl = content?.url
         TabsSheet(
-            tabs = browserState.tabs,
+            tabs = spaceTabs,
             selectedId = tab?.id,
             onSelect = {
                 components.tabsUseCases.selectTab(it)
@@ -142,7 +172,7 @@ private fun BrowserShell(components: KoanComponents, themeStore: ThemeStore) {
             },
             onClose = { components.tabsUseCases.removeTab(it) },
             onNewTab = {
-                components.tabsUseCases.addTab(MainActivity.HOME_URL, selectTab = true)
+                controller.openTab(MainActivity.HOME_URL, activeSpace)
                 showTabs = false
             },
             onThemeClick = {
@@ -150,14 +180,70 @@ private fun BrowserShell(components: KoanComponents, themeStore: ThemeStore) {
                 showTheme = true
             },
             onDismiss = { showTabs = false },
+            spaces = spaces,
+            activeSpace = activeSpace,
+            essentials = essentials,
+            canPinCurrent = currentUrl != null &&
+                currentUrl != "about:blank" &&
+                essentials.none { it.url == currentUrl },
+            onSelectSpace = { space ->
+                scope.launch { controller.switchTo(space, components.store.state) }
+            },
+            onCreateSpace = { creatingSpace = true },
+            onEditSpace = { editingSpace = it },
+            onOpenEssential = { essential ->
+                controller.openEssential(essential, activeSpace, components.store.state)
+                showTabs = false
+            },
+            onRemoveEssential = { scope.launch { repository.removeEssential(it) } },
+            onPinCurrent = {
+                val space = activeSpace ?: return@TabsSheet
+                val url = currentUrl ?: return@TabsSheet
+                scope.launch {
+                    repository.addEssential(space.id, url, content.title.orEmpty())
+                }
+            },
         )
     }
 
     if (showTheme) {
+        val space = activeSpace
         ThemePickerSheet(
-            spec = theme.spec,
-            onSpecChange = { scope.launch { themeStore.save(it) } },
+            spec = space?.toThemeSpec() ?: ThemePresets.default.toSpec(),
+            onSpecChange = { updated ->
+                if (space != null) scope.launch { repository.saveTheme(space.id, updated) }
+            },
             onDismiss = { showTheme = false },
+        )
+    }
+
+    if (creatingSpace || editingSpace != null) {
+        val target = editingSpace
+        SpaceEditDialog(
+            existing = target,
+            canDelete = spaces.size > 1,
+            onConfirm = { name, icon ->
+                scope.launch {
+                    if (target == null) {
+                        val created = repository.createSpace(name, icon)
+                        controller.switchTo(created, components.store.state)
+                    } else {
+                        repository.rename(target, name, icon)
+                    }
+                }
+                creatingSpace = false
+                editingSpace = null
+            },
+            onDelete = {
+                target?.let {
+                    scope.launch { controller.deleteSpace(it, components.store.state) }
+                }
+                editingSpace = null
+            },
+            onDismiss = {
+                creatingSpace = false
+                editingSpace = null
+            },
         )
     }
 }

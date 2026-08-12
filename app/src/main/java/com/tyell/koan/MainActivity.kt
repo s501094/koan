@@ -6,16 +6,17 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
-import com.tyell.koan.ui.KoanApp
 import com.tyell.koan.engine.UrlInput
+import com.tyell.koan.ui.KoanApp
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import mozilla.components.browser.state.selector.selectedTab
 import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
 
     private val components by lazy { koanComponents }
-    private val themeStore by lazy { koanThemeStore }
+    private val spaces by lazy { koanSpaces }
+    private val controller by lazy { koanSpaceController }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,35 +33,48 @@ class MainActivity : ComponentActivity() {
             .whenSessionsChange()
 
         setContent {
-            KoanApp(components, themeStore)
+            KoanApp(components, spaces, controller)
         }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        urlFromIntent(intent)?.let {
-            components.tabsUseCases.addTab(it, selectTab = true)
+        val url = urlFromIntent(intent) ?: return
+        lifecycleScope.launch {
+            controller.openTab(url, spaces.activeSpace.first())
         }
     }
 
+    /**
+     * Order matters here. Spaces have to exist before any tab can be given a
+     * contextId, and the session has to be restored before we can tell whether
+     * the active Space already has tabs in it.
+     */
     private fun restoreOrOpenSession(intent: Intent) {
         val incoming = urlFromIntent(intent)
 
         lifecycleScope.launch {
+            spaces.ensureSeeded()
             components.tabsUseCases.restore(components.sessionStorage)
 
+            val active = spaces.activeSpace.first()
+            val state = components.store.state
+
             when {
-                incoming != null ->
-                    components.tabsUseCases.addTab(incoming, selectTab = true)
+                incoming != null -> controller.openTab(incoming, active)
 
-                components.store.state.tabs.isEmpty() ->
-                    components.tabsUseCases.addTab(HOME_URL, selectTab = true)
-
-                components.store.state.selectedTab == null ->
-                    components.store.state.tabs.lastOrNull()?.let {
-                        components.tabsUseCases.selectTab(it.id)
+                // A restored session can hold tabs for several Spaces. Land in
+                // the active one rather than wherever the store happens to point.
+                else -> {
+                    val inSpace = controller.tabsIn(state, active)
+                    if (inSpace.isEmpty()) {
+                        controller.openTab(HOME_URL, active)
+                    } else if (controller.selectedTabIn(state, active) == null) {
+                        val target = inSpace.maxByOrNull { it.lastAccess } ?: inSpace.first()
+                        components.tabsUseCases.selectTab(target.id)
                     }
+                }
             }
         }
     }

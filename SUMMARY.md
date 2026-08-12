@@ -51,7 +51,18 @@ Verified visually by rendering Zen's literal CSS beside the Compose layer model 
 Two things the Android branch makes simpler: `canBeTransparent` is always false, so
 `#getSingleRGBColor` collapses to one blend, and `shouldBeDarkMode` skips the darkModeBias step.
 
-**3. Spaces + Essentials.** `:core:data` (Room), Space switcher, per-Space contextId, pinned grid.
+**3. Spaces + Essentials — done.**
+`:core:data` (Room + KSP): `SpaceEntity` (name, icon, position, theme inline), `EssentialEntity`
+(cascade-deleted with its Space, capped at Zen's 12), DAOs, `SpaceRepository`.
+Key decision: a tab's **`contextId` is its Space**. It's already Gecko's cookie-jar partition
+key, it's on `TabSessionState`, and Android Components persists it through session restore — so
+"which Space" and "which cookie jar" are one field and can't drift. No tab-to-space table.
+`SpaceQueries` holds the pure logic (filter, wrap-around step, most-recent) so it tests without
+an engine; `SpaceController` holds the half that mutates the browser.
+UI: Space chips wearing their own gradients, Essentials grid with pin-current tile, create/edit/
+delete dialog, and `zen.workspaces.swipe-actions` as a horizontal drag on the toolbar.
+Theme moved from global DataStore onto the Space row — each Space has its own gradient.
+38 tests total (8 SpaceQueries, 11 Robolectric repository, 13 gradient, 6 UrlInput).
 
 **4. Glance.** Long-press link → floating card, swipe to dismiss, drag up to promote.
 

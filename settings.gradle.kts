@@ -22,4 +22,4 @@ include(":app")
 include(":core:engine")
 include(":core:theme")
 include(":core:design")
-// :core:data (Room-backed spaces/folders/boosts) lands with the Spaces work.
+include(":core:data")

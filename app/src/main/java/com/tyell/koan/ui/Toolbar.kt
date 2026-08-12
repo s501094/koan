@@ -7,6 +7,7 @@ import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -40,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -70,6 +72,7 @@ fun Toolbar(
     onReload: () -> Unit,
     onStop: () -> Unit,
     onTabsClick: () -> Unit,
+    onSwipeSpace: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -77,6 +80,27 @@ fun Toolbar(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            // `zen.workspaces.swipe-actions`: drag the toolbar sideways to move
+            // between Spaces. The desktop uses a trackpad gesture; the phone
+            // equivalent is the bar itself.
+            .pointerInput(editing) {
+                if (editing) return@pointerInput
+                var travelled = 0f
+                val threshold = 90.dp.toPx()
+                detectHorizontalDragGestures(
+                    onDragEnd = { travelled = 0f },
+                    onDragCancel = { travelled = 0f },
+                ) { _, drag ->
+                    travelled += drag
+                    if (travelled <= -threshold) {
+                        onSwipeSpace(1)
+                        travelled = 0f
+                    } else if (travelled >= threshold) {
+                        onSwipeSpace(-1)
+                        travelled = 0f
+                    }
+                }
+            }
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),

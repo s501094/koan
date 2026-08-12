@@ -74,6 +74,7 @@ mozac-ui-icons = { group = "org.mozilla.components", name = "ui-icons", version.
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-test-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestJunit" }
+androidx-test-core = { group = "androidx.test", name = "core", version = "1.7.0" }
 androidx-test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
