@@ -17,10 +17,14 @@ class MainActivity : ComponentActivity() {
     private val components by lazy { koanComponents }
     private val spaces by lazy { koanSpaces }
     private val controller by lazy { koanSpaceController }
+    private val boosts by lazy { koanBoosts }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Bundled, local, no network. See BoostsFeature.EXTENSION_URL.
+        boosts.install()
 
         restoreOrOpenSession(intent)
 
@@ -33,7 +37,7 @@ class MainActivity : ComponentActivity() {
             .whenSessionsChange()
 
         setContent {
-            KoanApp(components, spaces, controller)
+            KoanApp(components, spaces, controller, boosts)
         }
     }
 

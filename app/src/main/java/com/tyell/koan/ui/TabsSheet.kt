@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -49,6 +50,7 @@ fun TabsSheet(
     onClose: (String) -> Unit,
     onNewTab: () -> Unit,
     onThemeClick: () -> Unit,
+    onBoostsClick: () -> Unit,
     onDismiss: () -> Unit,
     spaces: List<SpaceEntity>,
     activeSpace: SpaceEntity?,
@@ -101,6 +103,13 @@ fun TabsSheet(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
+                IconButton(onClick = onBoostsClick) {
+                    Icon(
+                        Icons.Default.Bolt,
+                        contentDescription = "Boosts",
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
                 IconButton(onClick = onThemeClick) {
                     Icon(
                         Icons.Default.Palette,

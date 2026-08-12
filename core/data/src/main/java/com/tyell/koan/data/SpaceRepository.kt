@@ -44,14 +44,18 @@ class SpaceRepository(
     fun essentials(spaceId: String): Flow<List<EssentialEntity>> =
         db.essentials().observeForSpace(spaceId)
 
+    /** The Boost for a hostname, or null if the site has none. */
+    fun boostFor(pattern: String): Flow<BoostEntity?> =
+        db.boosts().observeForPattern(pattern)
+
     /** Creates the starter Spaces on first run. Idempotent. */
     suspend fun ensureSeeded() {
         if (db.spaces().count() > 0) return
         listOf(
-            Triple("Personal", "🏡", "Dusk Blend"),
-            Triple("Work", "💼", "Slate Blend"),
+            Triple("Personal", "🏡", "Nocturne"),
+            Triple("Work", "💼", "Basalt"),
         ).forEachIndexed { index, (name, icon, presetName) ->
-            val preset = ThemePresets.all.firstOrNull { it.name == presetName }
+            val preset = ThemePresets.everything.firstOrNull { it.name == presetName }
                 ?: ThemePresets.default
             db.spaces().upsert(
                 SpaceEntity.create(

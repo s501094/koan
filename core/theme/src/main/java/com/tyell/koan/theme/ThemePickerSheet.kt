@@ -134,7 +134,7 @@ private fun PresetStrip(spec: ZenThemeSpec, onSpecChange: (ZenThemeSpec) -> Unit
             .horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        ThemePresets.all.forEach { preset ->
+        ThemePresets.everything.forEach { preset ->
             val presetSpec = remember(preset) { preset.toSpec(spec.opacity, spec.texture) }
             val selected = spec.dots.firstOrNull()?.let { d ->
                 d.x == preset.x && d.y == preset.y && spec.lightness == preset.lightness &&

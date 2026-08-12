@@ -131,6 +131,31 @@ class ZenGradientTest {
     }
 
     @Test
+    fun `the fifteen designed themes hit the hues their names promise`() {
+        fun primaryOf(name: String): String {
+            val preset = ThemePresets.designed.first { it.name == name }
+            return ZenColor.toHex(ZenGradient.primaryColor(preset.toSpec())!!)
+        }
+        // Regression guard for the first pass, where "Ember" rendered teal
+        // because a wide harmony had dragged the palette off its hue.
+        assertEquals("#AE3D13", primaryOf("Ember"))
+        assertEquals("#7D1C49", primaryOf("Wine"))
+        assertEquals("#291C69", primaryOf("Nocturne"))
+        assertEquals("#58E4C8", primaryOf("Aurora"))
+        assertEquals("#C3DAE9", primaryOf("Glacier"))
+    }
+
+    @Test
+    fun `designed themes cover both light and dark chrome`() {
+        val dark = ThemePresets.designed.count {
+            ZenGradient.shouldBeDark(it.toSpec(), systemDark = it.lightness < 50)
+        }
+        assertEquals(15, ThemePresets.designed.size)
+        assertTrue("expected a mix, got $dark dark", dark in 4..11)
+        assertEquals(56, ThemePresets.everything.size)
+    }
+
+    @Test
     fun `preset table has the shape the desktop ships`() {
         assertEquals(41, ThemePresets.all.size)
         assertEquals(8, ThemePresets.all.count { it.group == ThemePresets.Group.Light })

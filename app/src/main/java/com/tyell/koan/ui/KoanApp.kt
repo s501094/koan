@@ -30,9 +30,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.LaunchedEffect
+import com.tyell.koan.BoostsFeature
 import com.tyell.koan.Glance
 import com.tyell.koan.MainActivity
 import com.tyell.koan.SpaceController
+import com.tyell.koan.data.BoostEntity
 import com.tyell.koan.data.SpaceEntity
 import com.tyell.koan.data.SpaceRepository
 import com.tyell.koan.design.KoanDimens
@@ -45,6 +47,7 @@ import com.tyell.koan.theme.ThemePickerSheet
 import com.tyell.koan.theme.ThemePresets
 import com.tyell.koan.theme.zenGradientBackground
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.lib.state.ext.flow
@@ -54,6 +57,7 @@ fun KoanApp(
     components: KoanComponents,
     repository: SpaceRepository,
     controller: SpaceController,
+    boosts: BoostsFeature,
 ) {
     val activeSpace by repository.activeSpace.collectAsStateWithLifecycle(initialValue = null)
     val spec = remember(activeSpace) {
@@ -61,7 +65,7 @@ fun KoanApp(
     }
 
     KoanTheme(spec = spec) {
-        BrowserShell(components, repository, controller, activeSpace)
+        BrowserShell(components, repository, controller, boosts, activeSpace)
     }
 }
 
@@ -70,6 +74,7 @@ private fun BrowserShell(
     components: KoanComponents,
     repository: SpaceRepository,
     controller: SpaceController,
+    boosts: BoostsFeature,
     activeSpace: SpaceEntity?,
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -97,6 +102,24 @@ private fun BrowserShell(
     var editingSpace by remember { mutableStateOf<SpaceEntity?>(null) }
     var creatingSpace by remember { mutableStateOf(false) }
     var glanceTabId by remember { mutableStateOf<String?>(null) }
+    var showBoosts by remember { mutableStateOf(false) }
+    var zapArmed by remember { mutableStateOf(false) }
+
+    val currentHost = content?.url?.let { BoostEntity.patternFor(it) }
+    val boost by remember(currentHost) {
+        currentHost?.let { host ->
+            repository.boostFor(host)
+        } ?: flowOf(null)
+    }.collectAsStateWithLifecycle(initialValue = null)
+
+    // A tap during Zap comes back from the content script; persist it and
+    // disarm, so one arming hides exactly one element.
+    LaunchedEffect(boosts) {
+        boosts.picked.collect { picked ->
+            boosts.zap(picked.url, picked.selector)
+            zapArmed = false
+        }
+    }
 
     // A long press on a link lands in the tab's own state as a hit result.
     // Turn it into a Glance and consume it, so the same press can't fire twice.
@@ -171,6 +194,16 @@ private fun BrowserShell(
             )
         }
 
+        if (zapArmed) {
+            ZapArmedBanner(
+                onCancel = {
+                    boosts.stopPicker()
+                    zapArmed = false
+                },
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+        }
+
         Box(
             Modifier
                 .navigationBarsPadding()
@@ -222,6 +255,10 @@ private fun BrowserShell(
                 showTabs = false
                 showTheme = true
             },
+            onBoostsClick = {
+                showTabs = false
+                showBoosts = true
+            },
             onDismiss = { showTabs = false },
             spaces = spaces,
             activeSpace = activeSpace,
@@ -257,6 +294,33 @@ private fun BrowserShell(
                 if (space != null) scope.launch { repository.saveTheme(space.id, updated) }
             },
             onDismiss = { showTheme = false },
+        )
+    }
+
+    if (showBoosts) {
+        val url = content?.url.orEmpty()
+        BoostsSheet(
+            url = url,
+            boost = boost,
+            onZapStart = {
+                boosts.startPicker()
+                zapArmed = true
+                showBoosts = false
+            },
+            onRemoveZap = { selector ->
+                boost?.let { b -> scope.launch { boosts.removeZap(b, selector) } }
+            },
+            onToggleEnabled = { enabled ->
+                boost?.let { b -> scope.launch { boosts.setEnabled(b, enabled) } }
+            },
+            onSaveCss = { css ->
+                scope.launch { boosts.saveCss(url, css) }
+            },
+            onClearAll = {
+                boost?.let { b -> scope.launch { boosts.clear(b) } }
+                showBoosts = false
+            },
+            onDismiss = { showBoosts = false },
         )
     }
 

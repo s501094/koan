@@ -1,7 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+      Everything below is pulled in by a library and removed again here.
+
+      QUERY_ALL_PACKAGES lets an app enumerate every app you have installed,
+      which is a first-class fingerprinting signal. Android Components declares
+      it for the app-links feature, which this browser does not use.
+
+      The rest are capabilities nothing in this app exercises. A permission you
+      do not remove is a permission you are asking for.
+    -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" tools:node="remove" />
+    <uses-permission android:name="android.permission.REORDER_TASKS" tools:node="remove" />
+    <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" tools:node="remove" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" tools:node="remove" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -15,6 +32,12 @@
         android:supportsRtl="true"
         android:usesCleartextTraffic="false"
         android:theme="@style/Theme.Koan">
+
+        <!-- androidx.test leaks into the release APK because a production
+             Mozilla artifact (concept-toolbar) depends on a test library. -->
+        <activity android:name="androidx.test.core.app.InstrumentationActivityInvoker$BootstrapActivity" tools:node="remove" />
+        <activity android:name="androidx.test.core.app.InstrumentationActivityInvoker$EmptyActivity" tools:node="remove" />
+        <activity android:name="androidx.test.core.app.InstrumentationActivityInvoker$EmptyFloatingActivity" tools:node="remove" />
 
         <activity
             android:name=".MainActivity"

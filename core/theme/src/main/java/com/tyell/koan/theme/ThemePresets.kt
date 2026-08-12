@@ -31,7 +31,7 @@ object ThemePresets {
         }
     }
 
-    enum class Group { Light, LightBlend, Dark, DarkBlend, Mono }
+    enum class Group { Light, LightBlend, Dark, DarkBlend, Mono, Designed }
 
     // (x, y, lightness) triples shared between the flat and analogous rows.
     private val LIGHT = listOf(
@@ -94,6 +94,51 @@ object ThemePresets {
         }
     }
 
+    /**
+     * Fifteen themes of our own, alongside Zen's forty-one.
+     *
+     * Designed the other way round from Zen's: rather than placing a dot and
+     * seeing what colour comes out, pick the hue, saturation and lightness you
+     * want and invert [ColorWheel.colorFromPosition] to find the position that
+     * produces it. `tools/design_themes.py` does the inversion and renders the
+     * result; the coordinates below are its output.
+     *
+     * Harmony is load-bearing rather than decorative. Triadic and
+     * SplitComplementary fling their companion dots most of the way round the
+     * wheel, which is right for a deliberately polychrome theme and wrong for
+     * one named after a colour — the first pass had an "Ember" that rendered
+     * teal. Colour-named themes therefore use Floating or the tighter
+     * Analogous / SingleAnalogous.
+     */
+    private fun designed(
+        name: String,
+        x: Double,
+        y: Double,
+        lightness: Int,
+        harmony: Harmony,
+    ) = Preset(name, x, y, lightness, harmony, group = Group.Designed)
+
+    val designed: List<Preset> = listOf(
+        designed("Aurora", 134.9, 202.9, 62, Harmony.Analogous),
+        designed("Nocturne", 161.6, 110.1, 26, Harmony.SingleAnalogous),
+        designed("Sakura", 263.2, 161.8, 82, Harmony.Analogous),
+        designed("Ember", 230.4, 202.3, 38, Harmony.SingleAnalogous),
+        designed("Moss", 120.3, 281.5, 30, Harmony.SingleAnalogous),
+        designed("Vellum", 282.4, 273.3, 88, Harmony.SingleAnalogous),
+        designed("Tidepool", 131.9, 174.0, 55, Harmony.Analogous),
+        designed("Amber Dusk", 233.0, 223.8, 42, Harmony.SingleAnalogous),
+        designed("Iris", 200.0, 105.4, 74, Harmony.Analogous),
+        designed("Basalt", 52.8, 75.0, 26, Harmony.Floating),
+        designed("Citrus", 211.0, 235.9, 70, Harmony.Analogous),
+        designed("Wine", 256.2, 156.4, 30, Harmony.SingleAnalogous),
+        designed("Glacier", 89.9, 146.0, 84, Harmony.SingleAnalogous),
+        designed("Terracotta", 274.5, 211.8, 46, Harmony.SingleAnalogous),
+        designed("Void", 175.6, 81.4, 12, Harmony.Triadic),
+    )
+
+    /** Everything the picker offers: ours first, then Zen's. */
+    val everything: List<Preset> = designed + all
+
     /** What a Space starts on before anyone touches the picker. */
-    val default: Preset = all.first { it.name == "Dusk Blend" }
+    val default: Preset = designed.first { it.name == "Nocturne" }
 }

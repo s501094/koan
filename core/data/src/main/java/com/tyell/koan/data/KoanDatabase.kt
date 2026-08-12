@@ -9,6 +9,8 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
@@ -60,17 +62,65 @@ interface EssentialDao {
     suspend fun nextPosition(spaceId: String): Int
 }
 
+@Dao
+interface BoostDao {
+    @Query("SELECT * FROM boosts")
+    fun observeAll(): Flow<List<BoostEntity>>
+
+    @Query("SELECT * FROM boosts")
+    suspend fun getAll(): List<BoostEntity>
+
+    @Query("SELECT * FROM boosts WHERE pattern = :pattern LIMIT 1")
+    suspend fun forPattern(pattern: String): BoostEntity?
+
+    @Query("SELECT * FROM boosts WHERE pattern = :pattern LIMIT 1")
+    fun observeForPattern(pattern: String): Flow<BoostEntity?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(boost: BoostEntity)
+
+    @Delete
+    suspend fun delete(boost: BoostEntity)
+}
+
 @Database(
-    entities = [SpaceEntity::class, EssentialEntity::class],
-    version = 1,
+    entities = [SpaceEntity::class, EssentialEntity::class, BoostEntity::class],
+    version = 2,
     exportSchema = true,
 )
 abstract class KoanDatabase : RoomDatabase() {
     abstract fun spaces(): SpaceDao
     abstract fun essentials(): EssentialDao
+    abstract fun boosts(): BoostDao
 
     companion object {
         fun create(context: Context): KoanDatabase =
-            Room.databaseBuilder(context, KoanDatabase::class.java, "koan.db").build()
+            Room.databaseBuilder(context, KoanDatabase::class.java, "koan.db")
+                // v1 -> v2 added the boosts table. Nothing to preserve in it,
+                // and Spaces/Essentials are untouched, so a plain create is
+                // the whole migration.
+                .addMigrations(MIGRATION_1_2)
+                .build()
+
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `boosts` (
+                        `id` TEXT NOT NULL,
+                        `pattern` TEXT NOT NULL,
+                        `css` TEXT NOT NULL,
+                        `js` TEXT NOT NULL,
+                        `zapSelectors` TEXT NOT NULL,
+                        `enabled` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_boosts_pattern` ON `boosts` (`pattern`)",
+                )
+            }
+        }
     }
 }

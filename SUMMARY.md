@@ -77,6 +77,26 @@ consumes the hit result so one press can't fire twice.
 the main view keeps following the selection. The Glance tab is filtered out of the tab list.
 47 tests (9 new).
 
-**5. Boosts.** Bundled WebExtension content script, touch element picker, Zap, per-site CSS/JS.
+**5. Boosts — done.**
+`BoostEntity` (host pattern, css, js, zap selectors, enabled) + Room v1→v2 migration.
+Bundled MV2 extension in `app/src/main/assets/extensions/boosts/`, installed with
+`installBuiltInWebExtension` from `resource://android/assets/` — bundled, not fetched.
+Rules live in the app and are pushed over a native port; the extension is a dumb applier and
+caches them so a document_start content script never waits on a round trip.
+Zap: arm from the sheet, content script highlights on touch-move, computes a CSS path
+(prefers ids, skips bundler-hashed classes), sends it back, app persists it. Hidden with CSS
+rather than DOM removal so re-renders can't undo it. User JS runs in the content-script
+sandbox — DOM yes, page globals no; deliberate, avoids CSP fights.
+
+**Themes.** 15 original themes designed by inverting `colorFromPosition` (pick hue/saturation/
+lightness, solve for position) via `tools/design_themes.py`. First pass had wide harmonies
+dragging colour-named themes off their hue — "Ember" rendered teal — so colour-named ones use
+Floating/Analogous/SingleAnalogous. Golden tests pin five primaries. 56 presets total.
+
+**Privacy audit.** See `PRIVACY.md`. Permissions 10 → 5 (dropped QUERY_ALL_PACKAGES),
+androidx.test excluded from the release APK (a production mozac artifact depends on it),
+~60 Gecko prefs hardened, every endpoint found in the native libs neutralised by name.
+Reverted an over-eager exclusion of play-services-fido: GeckoView references it directly for
+WebAuthn feature detection, so removing it would crash ordinary pages.
 
 **6. Folders + Live Folders.** Nested folders, RSS and GitHub feed backing, WorkManager refresh.

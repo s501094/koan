@@ -13,6 +13,7 @@ import mozilla.components.concept.engine.EngineSession.TrackingProtectionPolicy
 import mozilla.components.concept.fetch.Client
 import mozilla.components.feature.session.SessionUseCases
 import mozilla.components.feature.tabs.TabsUseCases
+import org.mozilla.geckoview.ContentBlocking
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoRuntimeSettings
 
@@ -29,14 +30,39 @@ class KoanComponents(private val context: Context) {
         GeckoRuntime.create(
             context,
             GeckoRuntimeSettings.Builder()
+                // Left on deliberately: every pref PrivacyHardening sets is
+                // inspectable and overridable in about:config.
                 .aboutConfigEnabled(true)
                 .consoleOutput(false)
                 .debugLogging(false)
-                // Glean rides along in the dependency graph via service-nimbus.
-                // Never initialised, and telemetry is explicitly off.
+                .remoteDebuggingEnabled(false)
                 .extensionsProcessEnabled(true)
+                // Pages must not be able to drive the extensions API; that is
+                // the addons.mozilla.org install path and we have no use for it.
+                .extensionsWebAPIEnabled(false)
+                // No device-admin root certificates.
+                .enterpriseRootsEnabled(false)
+                // Gecko will read prefs off disk if pointed at a config file.
+                // Point it at nothing.
+                .configFilePath("")
+                // No crash-reporter service is registered anywhere in this app,
+                // so nothing is collected and nothing is uploaded.
+                .crashHandler(null)
+                // Nimbus experiments arrive through this delegate. There isn't
+                // one, so there are none.
+                .experimentDelegate(null)
+                .contentBlocking(
+                    ContentBlocking.Settings.Builder()
+                        // Safe Browsing fetches its lists from Google. See the
+                        // note in PrivacyHardening for the tradeoff.
+                        .safeBrowsing(ContentBlocking.SafeBrowsing.NONE)
+                        .build(),
+                )
                 .build(),
-        )
+        ).also {
+            // Must run after the runtime exists; the prefs live in Gecko.
+            PrivacyHardening.apply()
+        }
     }
 
     val engineSettings: DefaultSettings by lazy {

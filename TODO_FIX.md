@@ -2,6 +2,15 @@
 
 ## TODO
 
+- Boost JS runs in the content-script sandbox, so it can't touch page globals. Fine for DOM
+  tweaks, not enough for scripts that need to patch a site's own JS.
+- No Boost import/export, and no UI for the `js` field yet (CSS + Zap only in the sheet).
+- Zap selectors are computed once; a site that changes its class names breaks the selector
+  silently. No "this rule matched nothing" feedback.
+- Privacy audit is static only — never run on a device. Verify with PCAPdroid or tcpdump.
+- Glean/Nimbus classes and Mozilla endpoints remain compiled into libmegazord.so /
+  libcrashtools.so. Uninitialised and pref-disabled, but not removable without building Gecko.
+
 - A Glance left open when the app is killed comes back as an ordinary tab — `glanceTabId` is UI
   state and isn't persisted. Harmless, but it's a behaviour difference from desktop.
 - No nested Glance: long-pressing inside the overlay does nothing, since only the selected tab's
@@ -26,7 +35,6 @@
 - The wheel is sampled at 56x56 and redrawn each frame during a drag. Fine on a phone, but if it
   ever stutters, cache it to an ImageBitmap keyed on lightness+type.
 
-- Stage 5: Boosts (bundled WebExtension, touch element picker, Zap).
 - Stage 6: Folders + Live Folders (RSS, GitHub).
 - Port the 151 Zen SVG icons to vector drawables (MPL-2.0, needs attribution file).
 - Downloads, prompts, context menu and find-in-page features are on the classpath but not wired up.

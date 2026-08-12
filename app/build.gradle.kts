@@ -97,6 +97,34 @@ kotlin {
     }
 }
 
+/*
+ * Things that arrive uninvited.
+ *
+ * androidx.test: org.mozilla.components:concept-toolbar (a production artifact)
+ * depends on androidx.test.ext:junit-ktx, which drags JUnit and three
+ * instrumentation activities into the shipped APK. That is a packaging bug
+ * upstream, not something we need.
+ *
+ * com.google.android.gms is deliberately NOT excluded, though it was on a first
+ * pass. GeckoView's own org.mozilla.geckoview.WebAuthnTokenManager references
+ * com.google.android.gms.fido directly, and Gecko reaches it for plain feature
+ * detection — sites call isUserVerifyingPlatformAuthenticatorAvailable() on page
+ * load. Removing the library turns that into a NoClassDefFoundError on ordinary
+ * pages, so the exclusion traded a dormant library for real breakage.
+ *
+ * What that library is: an on-device client for the platform FIDO/passkey API.
+ * It is not analytics, it makes no network calls of its own, and it only runs
+ * when a site asks for WebAuthn. To be rid of it entirely, set
+ * `security.webauth.webauthn` to false in about:config — that stops Gecko
+ * entering the code path at all, at the cost of passkey support.
+ */
+configurations.configureEach {
+    exclude(group = "androidx.test")
+    exclude(group = "androidx.test.ext")
+    exclude(group = "androidx.test.services")
+    exclude(group = "androidx.test.espresso")
+}
+
 dependencies {
     implementation(project(":core:engine"))
     implementation(project(":core:data"))
@@ -121,7 +149,4 @@ dependencies {
     debugImplementation(libs.compose.ui.test.manifest)
 
     testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.test.junit)
-    androidTestImplementation(platform(libs.compose.bom))
-    androidTestImplementation(libs.compose.ui.test.junit4)
 }

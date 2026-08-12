@@ -125,3 +125,38 @@ data class EssentialEntity(
         const val MAX_PER_SPACE = 12
     }
 }
+
+/**
+ * A Boost — the device owner's own CSS, script and hidden-element list for one
+ * site.
+ *
+ * `pattern` is a hostname. A leading dot means "and all subdomains", which is
+ * the only wildcard worth having and avoids shipping a glob matcher.
+ *
+ * `zapSelectors` is a newline-joined list rather than its own table. It is a
+ * short list read and written whole, and a join table would buy nothing.
+ */
+@Entity(tableName = "boosts", indices = [Index(value = ["pattern"], unique = true)])
+data class BoostEntity(
+    @PrimaryKey val id: String,
+    val pattern: String,
+    val css: String = "",
+    val js: String = "",
+    val zapSelectors: String = "",
+    val enabled: Boolean = true,
+) {
+    val zapList: List<String>
+        get() = zapSelectors.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()
+
+    fun withZap(selectors: List<String>) = copy(zapSelectors = selectors.joinToString("\n"))
+
+    val isEmpty: Boolean
+        get() = css.isBlank() && js.isBlank() && zapList.isEmpty()
+
+    companion object {
+        /** The hostname a Boost for this URL would key on. */
+        fun patternFor(url: String): String? = runCatching {
+            java.net.URI(url).host?.removePrefix("www.")?.takeIf { it.isNotBlank() }
+        }.getOrNull()
+    }
+}
