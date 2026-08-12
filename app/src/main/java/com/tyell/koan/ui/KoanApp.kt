@@ -14,28 +14,53 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.layout
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tyell.koan.MainActivity
+import com.tyell.koan.ThemeStore
+import com.tyell.koan.design.KoanDimens
 import com.tyell.koan.design.KoanShapes
 import com.tyell.koan.engine.KoanComponents
 import com.tyell.koan.engine.UrlInput
+import com.tyell.koan.theme.KoanTheme
+import com.tyell.koan.theme.LocalKoanTheme
+import com.tyell.koan.theme.ThemePickerSheet
+import com.tyell.koan.theme.ThemePresets
+import com.tyell.koan.theme.zenGradientBackground
+import kotlinx.coroutines.launch
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.lib.state.ext.flow
 
 @Composable
-fun KoanApp(components: KoanComponents) {
+fun KoanApp(components: KoanComponents, themeStore: ThemeStore) {
+    val spec by themeStore.spec.collectAsStateWithLifecycle(
+        initialValue = ThemePresets.default.toSpec(),
+    )
+
+    KoanTheme(spec = spec) {
+        BrowserShell(components, themeStore)
+    }
+}
+
+@Composable
+private fun BrowserShell(components: KoanComponents, themeStore: ThemeStore) {
     val lifecycleOwner = LocalLifecycleOwner.current
+    val scope = rememberCoroutineScope()
+    val theme = LocalKoanTheme.current
+
     val stateFlow = remember(components, lifecycleOwner) {
         components.store.flow(lifecycleOwner)
     }
@@ -48,6 +73,7 @@ fun KoanApp(components: KoanComponents) {
 
     var editing by remember { mutableStateOf(false) }
     var showTabs by remember { mutableStateOf(false) }
+    var showTheme by remember { mutableStateOf(false) }
 
     BackHandler(enabled = editing || showTabs || content?.canGoBack == true) {
         when {
@@ -60,15 +86,21 @@ fun KoanApp(components: KoanComponents) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(androidx.compose.material3.MaterialTheme.colorScheme.background),
+            .zenGradientBackground(theme.spec, theme.isDark),
     ) {
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
                 .statusBarsPadding()
-                // Content sits inset from the chrome, the way desktop Zen's
-                // `zen.theme.content-element-separation` frames the page.
+                // The page floats on the gradient rather than covering it. This
+                // inset is Zen's `zen.theme.content-element-separation`, and it
+                // is the whole reason the theming is visible at all.
+                .padding(
+                    start = KoanDimens.contentSeparation,
+                    end = KoanDimens.contentSeparation,
+                    top = KoanDimens.contentSeparation,
+                )
                 .clip(KoanShapes.medium),
         ) {
             EngineViewHost(components, Modifier.fillMaxSize())
@@ -113,7 +145,19 @@ fun KoanApp(components: KoanComponents) {
                 components.tabsUseCases.addTab(MainActivity.HOME_URL, selectTab = true)
                 showTabs = false
             },
+            onThemeClick = {
+                showTabs = false
+                showTheme = true
+            },
             onDismiss = { showTabs = false },
+        )
+    }
+
+    if (showTheme) {
+        ThemePickerSheet(
+            spec = theme.spec,
+            onSpecChange = { scope.launch { themeStore.save(it) } },
+            onDismiss = { showTheme = false },
         )
     }
 }
@@ -154,7 +198,7 @@ private fun ProgressLine(
                         placeable.placeRelative(0, 0)
                     }
                 }
-                .background(androidx.compose.material3.MaterialTheme.colorScheme.primary),
+                .background(MaterialTheme.colorScheme.primary),
         )
     }
 }

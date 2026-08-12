@@ -8,7 +8,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
 import com.tyell.koan.ui.KoanApp
 import com.tyell.koan.engine.UrlInput
-import com.tyell.koan.theme.KoanTheme
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.selector.selectedTab
 import java.util.concurrent.TimeUnit
@@ -16,6 +15,7 @@ import java.util.concurrent.TimeUnit
 class MainActivity : ComponentActivity() {
 
     private val components by lazy { koanComponents }
+    private val themeStore by lazy { koanThemeStore }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,9 +32,7 @@ class MainActivity : ComponentActivity() {
             .whenSessionsChange()
 
         setContent {
-            KoanTheme {
-                KoanApp(components)
-            }
+            KoanApp(components, themeStore)
         }
     }
 

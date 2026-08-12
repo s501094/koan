@@ -31,9 +31,10 @@ kotlin {
 dependencies {
     api(project(":core:design"))
     implementation(platform(libs.compose.bom))
-    implementation(libs.compose.ui)
-    implementation(libs.compose.ui.graphics)
-    implementation(libs.compose.material3)
+    api(libs.compose.ui)
+    api(libs.compose.ui.graphics)
+    api(libs.compose.material3)
+    implementation(libs.compose.foundation)
 
     testImplementation(libs.junit)
 }

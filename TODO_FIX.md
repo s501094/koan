@@ -2,8 +2,14 @@
 
 ## TODO
 
-- Stage 2: gradient engine port (`ZenGradientGenerator.mjs` → Compose Brush layers).
-- Stage 2: 12 built-in theme presets + touch colour-wheel picker.
+- Theme picker: dots other than the primary aren't individually draggable yet — moving the
+  primary re-derives the rest from the harmony. Desktop lets you drag each one free ("floating").
+- Theme is global, not per-Space. Moves into the Space row when `:core:data` lands.
+- Custom (literal hex) dots are modelled in `ColorDot.customRgb` and handled by the gradient
+  composer, but there's no UI to enter one.
+- The wheel is sampled at 56x56 and redrawn each frame during a drag. Fine on a phone, but if it
+  ever stutters, cache it to an ImageBitmap keyed on lightness+type.
+
 - Stage 3: `:core:data` Room module — spaces, tabs, folders, boosts, theme presets.
 - Stage 3: Space switcher + per-Space `contextId` isolation + Essentials grid.
 - Stage 4: Glance modal.

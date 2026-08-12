@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,6 +46,7 @@ fun TabsSheet(
     onSelect: (String) -> Unit,
     onClose: (String) -> Unit,
     onNewTab: () -> Unit,
+    onThemeClick: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -67,6 +69,13 @@ fun TabsSheet(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
+                IconButton(onClick = onThemeClick) {
+                    Icon(
+                        Icons.Default.Palette,
+                        contentDescription = "Theme",
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
                 TextButton(onClick = onNewTab) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                     Text("New tab", Modifier.padding(start = 6.dp))
