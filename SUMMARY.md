@@ -121,3 +121,20 @@ fill = false)` on the list mean anything. Also added a divider above the tab sec
 explicit scrim.
 
 **6. Folders + Live Folders.** Nested folders, RSS and GitHub feed backing, WorkManager refresh.
+
+**Dropdowns.** Tapping a `<select>` did nothing. Same shape as the popup bug: Gecko raises a
+prompt, Android Components parks it on the tab's `promptRequests`, and nobody answered — logcat
+showed `GeckoView:Prompt:Dismiss` the instant the element was tapped. mozac's `PromptFeature`
+would have handled it but wants a FragmentManager (the app is all-Compose, `MainActivity` is a
+ComponentActivity) and compiles in save-password and credit-card capture UI, which this browser
+should not carry at all. So `Prompts` reads the state and `ChoicePromptSheet` renders it: single
+and menu choices confirm on tap, `multiple` selects tick and confirm on Done, `<optgroup>` becomes
+a header plus indented members, separators and disabled options aren't tappable. Every exit path
+consumes the request, otherwise it comes straight back on the next state change. 11 tests.
+
+Verified on the A059P against a live `<select>`: sheet opens, choice reaches the page, reopening
+shows the current value pre-selected, and dismissing doesn't wedge the element.
+
+Debug and release now install side by side — `versionNameSuffix` plus a `src/debug` resource
+overlay labels the debug build "Kōan Debug". Nothing's launcher forces themed icons, so the
+label is what distinguishes them, not the icon.

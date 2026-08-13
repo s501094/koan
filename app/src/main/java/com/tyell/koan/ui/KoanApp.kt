@@ -34,6 +34,7 @@ import com.tyell.koan.BoostsFeature
 import com.tyell.koan.Glance
 import com.tyell.koan.MainActivity
 import com.tyell.koan.Popups
+import com.tyell.koan.Prompts
 import com.tyell.koan.SpaceController
 import com.tyell.koan.data.BoostEntity
 import com.tyell.koan.data.SpaceEntity
@@ -363,6 +364,32 @@ private fun BrowserShell(
             onDismiss = {
                 creatingSpace = false
                 editingSpace = null
+            },
+        )
+    }
+
+    // A <select> raises a prompt on whichever tab holds the element, and the
+    // page is blocked until it's answered. Consume on every path out — a prompt
+    // left in state comes straight back on the next state change.
+    val prompt = Prompts.pendingIn(browserState.tabs)
+    if (prompt != null) {
+        fun consume() = components.store.dispatch(
+            ContentAction.ConsumePromptRequestAction(prompt.tabId, prompt.request),
+        )
+
+        ChoicePromptSheet(
+            request = prompt.request,
+            onConfirmSingle = {
+                Prompts.confirmSingle(prompt.request, it)
+                consume()
+            },
+            onConfirmMultiple = {
+                Prompts.confirmMultiple(prompt.request, it)
+                consume()
+            },
+            onDismiss = {
+                Prompts.dismiss(prompt.request)
+                consume()
             },
         )
     }

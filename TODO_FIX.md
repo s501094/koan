@@ -39,7 +39,10 @@
 
 - Stage 6: Folders + Live Folders (RSS, GitHub).
 - Port the 151 Zen SVG icons to vector drawables (MPL-2.0, needs attribution file).
-- Downloads, prompts, context menu and find-in-page features are on the classpath but not wired up.
+- Downloads, context menu and find-in-page features are on the classpath but not wired up.
+- Only choice prompts (`<select>`) are handled. `alert`/`confirm`/`prompt`, `<input type=file>`,
+  HTTP auth and date/time pickers come through the same `promptRequests` channel and are still
+  dropped. Save-password and credit-card capture stay unimplemented on purpose.
 - uBlock Origin install flow (`feature-addons`, direct XPI URL — AMO collections need a Mozilla-side collection).
 - No armeabi-v7a in the APK. Add to `abiFilters` if an old device ever needs it.
 - Long-press context menu currently falls through to Gecko's default, not ours.
