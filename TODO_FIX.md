@@ -21,7 +21,9 @@
 
 - Popup tabs aren't marked as popups, so there's no "opened by localhost:8099" affordance and no
   way to tell one from a tab you opened yourself. `parentId` is set, just unused in the UI.
-- Nothing rate-limits popups — a page in a loop could open tabs until the Space is unusable.
+- No app-level popup quota. Deliberate: Gecko's own popup blocker already caps it — 20
+  `window.open` calls in a loop produced exactly one tab on device, with and without user
+  activation. Revisit only if a real site is seen getting more than one through.
 - Essentials favicons only appear when a tab in the Space happens to be on that URL. Needs
   `BrowserIcons` proper (it's already constructed in `KoanComponents`, just unused).
 - Spaces can't be reordered; `position` is write-only in practice.

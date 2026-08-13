@@ -55,6 +55,9 @@ object Popups {
      */
     fun isOpenable(url: String): Boolean {
         if (url.isBlank() || url == "about:blank") return true
-        return url.startsWith("http://") || url.startsWith("https://")
+        // The scheme comes straight off the window.open argument, so it hasn't
+        // necessarily been normalised yet.
+        return url.startsWith("http://", ignoreCase = true) ||
+            url.startsWith("https://", ignoreCase = true)
     }
 }

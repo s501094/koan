@@ -58,6 +58,13 @@ class PopupsTest {
     }
 
     @Test
+    fun `the scheme hasn't necessarily been lowercased yet`() {
+        assertTrue(Popups.isOpenable("HTTPS://example.com"))
+        assertTrue(Popups.isOpenable("Http://example.com"))
+        assertFalse(Popups.isOpenable("FILE:///etc/hosts"))
+    }
+
+    @Test
     fun `window close closes the tab that asked`() {
         val action = Popups.actionFor(tab(FakeRequest(WindowRequest.Type.CLOSE, "")))
         assertEquals(Popups.Action.Close("opener"), action)

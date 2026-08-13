@@ -41,6 +41,7 @@ object Glance {
     fun isGlanceable(url: String): Boolean {
         if (url.isBlank()) return false
         if (url.startsWith("#")) return false
-        return url.startsWith("http://") || url.startsWith("https://")
+        return url.startsWith("http://", ignoreCase = true) ||
+            url.startsWith("https://", ignoreCase = true)
     }
 }
