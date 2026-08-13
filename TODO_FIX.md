@@ -19,9 +19,9 @@
   should open in a Glance rather than navigating the Essential away.
 - Two live EngineViews while a Glance is open. Fine for one overlay; worth watching for memory.
 
-- Popups / `target=_blank` aren't handled — `WindowFeature` from `feature-session` isn't wired,
-  so a page opening a new window currently does nothing. It also needs to inherit the Space's
-  contextId when it is wired.
+- Popup tabs aren't marked as popups, so there's no "opened by localhost:8099" affordance and no
+  way to tell one from a tab you opened yourself. `parentId` is set, just unused in the UI.
+- Nothing rate-limits popups — a page in a loop could open tabs until the Space is unusable.
 - Essentials favicons only appear when a tab in the Space happens to be on that URL. Needs
   `BrowserIcons` proper (it's already constructed in `KoanComponents`, just unused).
 - Spaces can't be reordered; `position` is write-only in practice.
@@ -40,10 +40,9 @@
 - Downloads, prompts, context menu and find-in-page features are on the classpath but not wired up.
 - uBlock Origin install flow (`feature-addons`, direct XPI URL — AMO collections need a Mozilla-side collection).
 - No armeabi-v7a in the APK. Add to `abiFilters` if an old device ever needs it.
-- Never run on a real device or emulator. The local AVD's system image is a stub (no `.img`
-  files) and no phone was attached, so verification was static only: signature, manifest,
-  ABI, icon resources, 6/6 unit tests.
 - Long-press context menu currently falls through to Gecko's default, not ours.
+- Only run on one device so far (Nothing A059P, Android 16, arm64). Spaces gestures, theme
+  persistence and Essentials still unverified on hardware — only popups and the tab sheet are.
 
 ## Flagged / broken
 
@@ -53,5 +52,7 @@
 - `browser-engine-gecko` drags in `service-nimbus` and `glean-native`. Never initialised and
   telemetry prefs are off, but the code is in the APK. Worth confirming it stays inert.
 - `enableEdgeToEdge` + `imePadding` on the toolbar is untested against the keyboard on a real device.
+- Landscape wastes most of the tab sheet on the Spaces row and Essentials grid — the tab list only
+  gets one row before it has to scroll. Bounded now, but the layout wants a two-column split.
 - Session restore races the intent handler on cold start with a VIEW intent — restore runs in a
   coroutine, the intent tab is added after. Looks right, not verified.

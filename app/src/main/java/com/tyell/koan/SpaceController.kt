@@ -68,6 +68,28 @@ class SpaceController(
         )
 
     /**
+     * The engine session already exists — Gecko built it when the page called
+     * `window.open` — so the tab is created around it rather than loading a URL,
+     * and `start()` is what finally lets Gecko run the load.
+     */
+    fun handlePopup(action: Popups.Action) {
+        when (action) {
+            is Popups.Action.Close -> components.tabsUseCases.removeTab(action.tabId)
+            is Popups.Action.Open -> {
+                components.tabsUseCases.addTab(
+                    url = action.url,
+                    selectTab = true,
+                    startLoading = false,
+                    parentId = action.parentId,
+                    contextId = action.contextId,
+                    engineSession = action.request.prepare(),
+                )
+                action.request.start()
+            }
+        }
+    }
+
+    /**
      * Switches Space by selecting something inside it. There is no separate
      * "current Space" in the engine — the Space you're in is simply the Space
      * of whichever tab is being rendered.

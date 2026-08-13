@@ -99,4 +99,25 @@ androidx.test excluded from the release APK (a production mozac artifact depends
 Reverted an over-eager exclusion of play-services-fido: GeckoView references it directly for
 WebAuthn feature detection, so removing it would crash ordinary pages.
 
+**Popups + first hardware run.** `window.open` and `target=_blank` did nothing before this —
+Gecko parks a `WindowRequest` on the opener's ContentState and waits, and nothing consumed it.
+Android Components' own `WindowFeature` would have, but it knows nothing about Spaces and would
+drop the new tab in the default cookie jar, so an OAuth popup would authenticate in a different
+jar than the page that opened it. `Popups.actionFor` decides (pure, six tests), `SpaceController
+.handlePopup` acts: tab built around `request.prepare()`, contextId copied from the opener,
+`request.start()` last. `about:blank` is allowed because the two-step popup opens blank and
+navigates from script; `file:`/`data:`/`intent:` are refused.
+
+First run on real hardware (Nothing A059P, Android 16, arm64) — everything before this was
+static verification. All four popup shapes confirmed against a local test page: `target=_blank`,
+direct `window.open`, blank-then-navigate, and `file://` refused. `window.close()` closes the
+popup and returns to the opener. Tab counter reads the Space-filtered list, so the count going
+2 → 3 is itself proof the contextId was inherited.
+
+Hardware also exposed a real tab-sheet bug: a Column lays its last child out past the bottom of
+the screen, and in landscape the Spaces row plus Essentials grid left the tab list off the edge
+with no way to scroll to it. Bounding the Column with `heightIn` is what makes `weight(1f,
+fill = false)` on the list mean anything. Also added a divider above the tab section and an
+explicit scrim.
+
 **6. Folders + Live Folders.** Nested folders, RSS and GitHub feed backing, WorkManager refresh.

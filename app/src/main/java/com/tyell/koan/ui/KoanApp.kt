@@ -33,6 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import com.tyell.koan.BoostsFeature
 import com.tyell.koan.Glance
 import com.tyell.koan.MainActivity
+import com.tyell.koan.Popups
 import com.tyell.koan.SpaceController
 import com.tyell.koan.data.BoostEntity
 import com.tyell.koan.data.SpaceEntity
@@ -131,6 +132,18 @@ private fun BrowserShell(
         if (glanceTabId == null) {
             glanceTabId = controller.openTab(link, activeSpace, selectTab = false)
         }
+    }
+
+    // A popup is parked on whichever tab called window.open, which isn't
+    // necessarily the selected one — a background tab can open a window. Scan
+    // all of them, and consume even when we refuse the request, or the same one
+    // comes back on every state change.
+    val opener = browserState.tabs.firstOrNull { it.content.windowRequest != null }
+    LaunchedEffect(opener?.id, opener?.content?.windowRequest) {
+        val tab = opener ?: return@LaunchedEffect
+        val action = Popups.actionFor(tab)
+        components.store.dispatch(ContentAction.ConsumeWindowRequestAction(tab.id))
+        if (action != null) controller.handlePopup(action)
     }
 
     // The Glance tab is a real tab in the Space, just currently being shown in
