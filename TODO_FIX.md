@@ -37,6 +37,14 @@
 - The wheel is sampled at 56x56 and redrawn each frame during a drag. Fine on a phone, but if it
   ever stutters, cache it to an ImageBitmap keyed on lightness+type.
 
+- No private tabs. Gecko supports it per-session (`privateMode` on the engine session) and the
+  contextId machinery is already the right shape for it, but nothing exposes it — there's no way
+  to open a tab that leaves no cookies, cache or session entry behind.
+- Home page should be Google. There's no home page concept at all right now: a new tab opens
+  blank and the only way anywhere is typing in the toolbar.
+- No way to get to an empty tab. Closing the last tab, or wanting a clean blank one, isn't
+  reachable from the UI.
+
 - Stage 6: Folders + Live Folders (RSS, GitHub).
 - Port the 151 Zen SVG icons to vector drawables (MPL-2.0, needs attribution file).
 - Downloads, context menu and find-in-page features are on the classpath but not wired up.
@@ -61,3 +69,9 @@
   gets one row before it has to scroll. Bounded now, but the layout wants a two-column split.
 - Session restore races the intent handler on cold start with a VIEW intent — restore runs in a
   coroutine, the intent tab is added after. Looks right, not verified.
+- **A closed tab comes back.** Close a tab, kill the app, reopen — the tab is there again.
+  Reported on device. Auto-save presumably wrote the snapshot before the close reached state, or
+  restore is reading a stale one, so closing never reaches disk. Serious: a tab you closed on
+  purpose reappearing is a privacy problem, not just a bug. Check the `MainActivity` auto-save
+  hook against `TabsUseCases.removeTab` ordering, and whether `SessionStorage` is saving on the
+  right lifecycle event.
