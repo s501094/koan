@@ -45,11 +45,21 @@ problem; that is what the engine weighs.
 ## Status
 
 Working: browsing, tabs, session restore across kills, URL-or-search, intent handling,
-tracking protection, adaptive icon.
+tracking protection, gradient theming, Spaces + Essentials, Glance, Boosts, popups, `<select>`
+prompts, adaptive icon.
 
-Next: gradient theming, then Spaces + Essentials, then Glance, then Boosts, then folders.
-See `SUMMARY.md` and `TODO_FIX.md`.
+Next: folders, then the rest of the prompt channel (alerts, file upload, auth). No private tabs
+yet, and a closed tab currently comes back after an app restart — see `TODO_FIX.md`.
 
 ## Icon
 
 `art/enso.py` generates it. Edit the script, not the XML — the vector drawables are output.
+
+## Licence
+
+MIT — see `LICENSE`. Do what you like with it.
+
+A built APK also contains GeckoView and Mozilla Android Components, which are MPL-2.0; if you
+distribute one, `THIRD_PARTY_NOTICES.md` goes with it.
+
+PRs welcome — `CONTRIBUTING.md`.
