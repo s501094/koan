@@ -40,8 +40,11 @@
 - No private tabs. Gecko supports it per-session (`privateMode` on the engine session) and the
   contextId machinery is already the right shape for it, but nothing exposes it — there's no way
   to open a tab that leaves no cookies, cache or session entry behind.
-- Home page should be Google. There's no home page concept at all right now: a new tab opens
-  blank and the only way anywhere is typing in the toolbar.
+- Home page should be Google. Currently `MainActivity.HOME_URL` = `https://duckduckgo.com/`,
+  used for new tabs and the first tab of a new Space. One constant. Decide separately whether
+  `UrlInput.DEFAULT_SEARCH_TEMPLATE` (also DDG) moves with it — and note both choices sit against
+  the privacy thesis in `PRIVACY.md`, since Google logs queries and DDG is the reason the app
+  currently makes no tracked search request. Make it a setting rather than a swapped constant.
 - No way to get to an empty tab. Closing the last tab, or wanting a clean blank one, isn't
   reachable from the UI.
 
