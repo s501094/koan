@@ -72,6 +72,17 @@
   gets one row before it has to scroll. Bounded now, but the layout wants a two-column split.
 - Session restore races the intent handler on cold start with a VIEW intent — restore runs in a
   coroutine, the intent tab is added after. Looks right, not verified.
+- `android:dataExtractionRules` is not set. `allowBackup="false"` stops Google cloud backup, but
+  on Android 12+ device-to-device transfer is governed separately — so a phone-to-phone migration
+  could carry the profile (cookie jars included) to a new device. Set the rules file and deny
+  both `<cloud-backup>` and `<device-transfer>` explicitly.
+- WorkManager is in the release APK, pulled by `org.mozilla.components:concept-storage` (via
+  `feature-session` / `browser-state`). It adds an exported `SystemJobService` and a
+  `DiagnosticsReceiver` — both permission-guarded, but the point of WorkManager is running code
+  while the app is closed, which a browser making no network calls of its own shouldn't need.
+  No storage delegate is wired, so nothing should be scheduling anything. Verify on device with
+  `adb shell dumpsys jobscheduler | grep com.tyell.koan`, then consider excluding the module.
+
 - **A closed tab comes back.** Close a tab, kill the app, reopen — the tab is there again.
   Reported on device. Auto-save presumably wrote the snapshot before the close reached state, or
   restore is reading a stale one, so closing never reaches disk. Serious: a tab you closed on
