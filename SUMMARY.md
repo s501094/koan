@@ -138,3 +138,16 @@ shows the current value pre-selected, and dismissing doesn't wedge the element.
 Debug and release now install side by side — `versionNameSuffix` plus a `src/debug` resource
 overlay labels the debug build "Kōan Debug". Nothing's launcher forces themed icons, so the
 label is what distinguishes them, not the icon.
+
+**Open sourced.** Public at github.com/s501094/koan under MIT, plus THIRD_PARTY_NOTICES.md for
+the MPL-2.0 Mozilla components (that licence follows a distributed APK, not the repo) and a short
+CONTRIBUTING.md. README rewritten to lead with the privacy position: nothing in the app tracks
+you, and an explicit section on what it can't protect against — ISP, carrier, the sites
+themselves — because a privacy tool that overstates its reach is worse than none.
+
+**Queued, not started.** Private tabs. Home page to Google (it's `MainActivity.HOME_URL`, DDG
+today — worth making a setting, and it argues against the privacy thesis either way). A closed
+tab reappearing after an app restart, which is a privacy bug not just a session bug.
+`dataExtractionRules` unset, so Android 12+ device-to-device transfer can carry the profile even
+with `allowBackup=false`. WorkManager present via `concept-storage` — needs `dumpsys jobscheduler`
+to confirm nothing is scheduled. Runtime packet capture still never done; the phone was unplugged.
