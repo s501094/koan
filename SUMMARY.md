@@ -145,9 +145,32 @@ CONTRIBUTING.md. README rewritten to lead with the privacy position: nothing in 
 you, and an explicit section on what it can't protect against — ISP, carrier, the sites
 themselves — because a privacy tool that overstates its reach is worse than none.
 
-**Queued, not started.** Private tabs. Home page to Google (it's `MainActivity.HOME_URL`, DDG
-today — worth making a setting, and it argues against the privacy thesis either way). A closed
-tab reappearing after an app restart, which is a privacy bug not just a session bug.
-`dataExtractionRules` unset, so Android 12+ device-to-device transfer can carry the profile even
-with `allowBackup=false`. WorkManager present via `concept-storage` — needs `dumpsys jobscheduler`
-to confirm nothing is scheduled. Runtime packet capture still never done; the phone was unplugged.
+**A closed tab came back — fixed.** Reproduced on an A024 (Android 16): close a tab, kill the
+app, reopen, the tab is back. The cause is in mozac's autoSave, and the third argument is the
+trap — `autoSave(store, 30, SECONDS)` sets a *minimum interval*, not a period. A change inside
+that window is written by a GlobalScope coroutine that calls `delay()` first, and
+`whenGoingToBackground` — the one hook guaranteed to run before a kill — skips outright while
+that job is pending ("Skipping save, other job already in flight") and hands back the delayed
+job. Kill the process in the window and the close dies with it.
+
+Timing-dependent, which is why it looked intermittent: close a tab more than 30s after the last
+save and it persists fine. Confirmed both ways on device against the snapshot file directly —
+disk `[com, org]`, close `com` in the UI, force-stop, disk still `[com, org]`. After the fix the
+same sequence leaves `[org, net]`.
+
+`saveOnRemove` is a BrowserStore middleware that writes the session synchronously after any tab
+removal reduces. `Store.dispatch` runs the middleware chain inline on the caller's thread in
+153.0.4, so by the time the close returns there is no window left to lose. Additions and
+navigations stay on the throttle on purpose: losing a tab you opened costs a tab, losing a tab
+you closed leaks one. Catching it at the store rather than at the four call sites (tab sheet,
+Glance, `window.close()`, Space delete) means future close paths are covered for free. 4 tests,
+82 total.
+
+**Queued, not started.** Private tabs, now with a lock — reopening them should want the
+fingerprint reader, device PIN as fallback. Long-press on a video scrubber pauses instead of
+scrubbing; likely our Glance long-press eating the drag. Home page to Google (it's
+`MainActivity.HOME_URL`, DDG today — worth making a setting, and it argues against the privacy
+thesis either way). `dataExtractionRules` unset, so Android 12+ device-to-device transfer can
+carry the profile even with `allowBackup=false`. WorkManager present via `concept-storage` —
+needs `dumpsys jobscheduler` to confirm nothing is scheduled. Runtime packet capture still never
+done; the phone was unplugged.

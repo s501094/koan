@@ -39,7 +39,14 @@
 
 - No private tabs. Gecko supports it per-session (`privateMode` on the engine session) and the
   contextId machinery is already the right shape for it, but nothing exposes it — there's no way
-  to open a tab that leaves no cookies, cache or session entry behind.
+  to open a tab that leaves no cookies, cache or session entry behind. Requested with a lock:
+  getting back into private tabs should take the fingerprint reader, falling back to the device
+  PIN/pattern. `androidx.biometric` + `BIOMETRIC_STRONG or DEVICE_CREDENTIAL`.
+- Long-press on a video's scrubber pauses the video instead of scrubbing. A press-and-hold on
+  the seek bar should drag it. Suspect our own Glance long-press: the hit-result observer fires
+  on any long press, and whatever it does to the touch stream leaves the page seeing a tap
+  (play/pause toggle) rather than a drag. Check what Glance does on a press that lands on a
+  non-link, and whether the video controls ever see the move events.
 - Home page should be Google. Currently `MainActivity.HOME_URL` = `https://duckduckgo.com/`,
   used for new tabs and the first tab of a new Space. One constant. Decide separately whether
   `UrlInput.DEFAULT_SEARCH_TEMPLATE` (also DDG) moves with it — and note both choices sit against
@@ -83,9 +90,6 @@
   No storage delegate is wired, so nothing should be scheduling anything. Verify on device with
   `adb shell dumpsys jobscheduler | grep com.tyell.koan`, then consider excluding the module.
 
-- **A closed tab comes back.** Close a tab, kill the app, reopen — the tab is there again.
-  Reported on device. Auto-save presumably wrote the snapshot before the close reached state, or
-  restore is reading a stale one, so closing never reaches disk. Serious: a tab you closed on
-  purpose reappearing is a privacy problem, not just a bug. Check the `MainActivity` auto-save
-  hook against `TabsUseCases.removeTab` ordering, and whether `SessionStorage` is saving on the
-  right lifecycle event.
+- Additions and navigations are still on the 30s autoSave throttle, so killing the app right
+  after opening a tab still loses that tab. Left alone deliberately — losing a tab you opened
+  costs you a tab, it never leaks one. Only removals were given the guarantee.

@@ -88,7 +88,7 @@ class KoanComponents(private val context: Context) {
      * rather than poking Gecko, which is what keeps them unit-testable.
      */
     val store: BrowserStore by lazy {
-        BrowserStore(middleware = EngineMiddleware.create(engine))
+        BrowserStore(middleware = EngineMiddleware.create(engine) + saveOnRemove(sessionStorage))
     }
 
     val sessionStorage: SessionStorage by lazy {
